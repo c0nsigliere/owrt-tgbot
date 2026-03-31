@@ -1,0 +1,47 @@
+{
+  "up": true,
+  "pending": false,
+  "available": true,
+  "autostart": true,
+  "dynamic": false,
+  "uptime": 310800,
+  "l3_device": "eth1",
+  "proto": "dhcp",
+  "device": "eth1",
+  "metric": 0,
+  "dns_metric": 0,
+  "delegation": true,
+  "ipv4-address": [
+    {
+      "address": "203.0.113.42",
+      "mask": 24
+    }
+  ],
+  "ipv6-address": [],
+  "ipv6-prefix": [],
+  "ipv6-prefix-assignment": [],
+  "route": [
+    {
+      "target": "0.0.0.0",
+      "mask": 0,
+      "nexthop": "203.0.113.1",
+      "source": "0.0.0.0/0"
+    }
+  ],
+  "dns-server": [
+    "8.8.8.8",
+    "1.1.1.1"
+  ],
+  "dns-search": [],
+  "inactive": {
+    "ipv4-address": [],
+    "ipv6-address": [],
+    "route": [],
+    "dns-server": [],
+    "dns-search": []
+  },
+  "data": {
+    "hostname": "OpenWrt",
+    "leasetime": 86400
+  }
+}

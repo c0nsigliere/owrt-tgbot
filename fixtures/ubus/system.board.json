@@ -1,0 +1,15 @@
+{
+  "kernel": "5.15.150",
+  "hostname": "OpenWrt",
+  "system": "MediaTek MT7981B ver:1 eco:2",
+  "model": "Cudy WR3000P",
+  "board_name": "cudy,wr3000p",
+  "rootfs_type": "squashfs",
+  "release": {
+    "distribution": "OpenWrt",
+    "version": "23.05.3",
+    "revision": "r24076-4b4d2e0e76",
+    "target": "mediatek/filogic",
+    "description": "OpenWrt 23.05.3 r24076-4b4d2e0e76"
+  }
+}

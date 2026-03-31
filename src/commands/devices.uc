@@ -1,0 +1,107 @@
+'use strict';
+
+import * as util from '../lib/util.uc';
+import * as devices_lib from '../lib/devices.uc';
+
+const PAGE_SIZE = 10;
+
+function format_device_list(devices, start, end, ic) {
+    let lines = [];
+    for (let i = start; i < end; i++) {
+        let dev = devices[i];
+        let status_icon = dev.online ? ic.green : ic.white;
+        let name = dev.hostname || "unknown";
+        if (dev.hostname == null) status_icon = ic.yellow;
+
+        let is_last = (i == end - 1);
+        let prefix = is_last ? ic.corner : ic.tee;
+        let cont = is_last ? "  " : ic.pipe;
+
+        push(lines, sprintf("%s %s %s", prefix, status_icon, util.escape_markdown(name)));
+        push(lines, sprintf("%s     %s %s", cont,
+            util.escape_markdown(dev.ip || "?"),
+            util.escape_markdown(dev.mac || "?")));
+
+        if (dev.signal != null) {
+            push(lines, sprintf("%s     %s %s dBm", cont,
+                util.escape_markdown(dev.band || "Wi-Fi"),
+                dev.signal));
+        } else if (dev.band != null) {
+            push(lines, sprintf("%s     %s", cont, util.escape_markdown(dev.band)));
+        }
+    }
+    return lines;
+}
+
+function build_page(page) {
+    let devices = devices_lib.get_all();
+    let ic = util.icons;
+
+    let online_count = 0;
+    for (let dev in devices) {
+        if (dev.online) online_count++;
+    }
+
+    let total = length(devices);
+    let pages = int((total + PAGE_SIZE - 1) / (PAGE_SIZE * 1.0));
+    if (pages < 1) pages = 1;
+    if (page > pages) page = pages;
+    if (page < 1) page = 1;
+    let start = (page - 1) * PAGE_SIZE;
+    let end = start + PAGE_SIZE;
+    if (end > total) end = total;
+
+    let lines = [];
+    push(lines, sprintf("%s *Connected Devices (%d online, %d total) — %d/%d*",
+        ic.phone, online_count, total, page, pages));
+    push(lines, ic.pipe);
+    let dl = format_device_list(devices, start, end, ic);
+    for (let l in dl) push(lines, l);
+
+    let text = join("\n", lines);
+
+    // Build inline keyboard
+    let buttons = [];
+    if (page > 1) {
+        push(buttons, { text: "\u2B05 Prev", callback_data: "devices:" + (page - 1) });
+    }
+    if (pages > 1) {
+        push(buttons, { text: "" + page + "/" + pages, callback_data: "devices:noop" });
+    }
+    if (page < pages) {
+        push(buttons, { text: "Next \u27A1", callback_data: "devices:" + (page + 1) });
+    }
+
+    let reply_markup = null;
+    if (length(buttons) > 0) {
+        reply_markup = { inline_keyboard: [buttons] };
+    }
+
+    return {
+        text,
+        opts: { parse_mode: "Markdown", reply_markup },
+    };
+}
+
+return {
+    name: "/devices",
+    description: "Connected devices",
+    callback_name: "devices",
+
+    handler: function(chat_id, args, ctx) {
+        let page = 1;
+        let a = util.trim(args);
+        if (a != "") {
+            let p = +a;
+            if (p > 0) page = int(p);
+        }
+        return build_page(page);
+    },
+
+    on_callback: function(chat_id, message_id, cb_args, ctx) {
+        if (cb_args == "noop") return null;
+        let page = +cb_args;
+        if (!(page > 0)) page = 1;
+        return build_page(int(page));
+    },
+};

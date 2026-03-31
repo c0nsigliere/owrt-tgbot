@@ -1,0 +1,28 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+STOP=10
+USE_PROCD=1
+
+INSTALL_DIR="/usr/lib/owrt-tgbot"
+
+start_service() {
+    mkdir -p /tmp/owrt-tgbot/state /tmp/owrt-tgbot/tasks /etc/owrt-tgbot/state
+    cp /etc/owrt-tgbot/state/* /tmp/owrt-tgbot/state/ 2>/dev/null
+
+    procd_open_instance
+    procd_set_param command /usr/bin/ucode -S "${INSTALL_DIR}/main.uc"
+    procd_set_param respawn 3600 5 5
+    procd_set_param stdout 1
+    procd_set_param stderr 1
+    procd_set_param pidfile /var/run/owrt-tgbot.pid
+    procd_close_instance
+}
+
+stop_service() {
+    cp /tmp/owrt-tgbot/state/* /etc/owrt-tgbot/state/ 2>/dev/null
+}
+
+service_triggers() {
+    procd_add_reload_trigger "owrt-tgbot"
+}

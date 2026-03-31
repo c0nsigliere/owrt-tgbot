@@ -1,0 +1,18 @@
+# Dev/IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+*.ipk
+build/
+
+# Secrets (never commit)
+.env
+bot_token.txt
+
+# OS
+.DS_Store
+Thumbs.db
