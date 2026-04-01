@@ -1,0 +1,65 @@
+{
+  "vnstatversion": "1.18",
+  "jsonversion": "1",
+  "interfaces": [
+    {
+      "id": "wan",
+      "nick": "wan",
+      "created": {
+        "date": { "year": 2026, "month": 3, "day": 29 }
+      },
+      "updated": {
+        "date": { "year": 2026, "month": 4, "day": 1 },
+        "time": { "hour": 19, "minute": 58 }
+      },
+      "traffic": {
+        "total": {
+          "rx": 13112573,
+          "tx": 2661292
+        },
+        "days": [
+          {
+            "id": 0,
+            "date": { "year": 2026, "month": 4, "day": 1 },
+            "rx": 8588081,
+            "tx": 2216735
+          },
+          {
+            "id": 1,
+            "date": { "year": 2026, "month": 3, "day": 31 },
+            "rx": 4524492,
+            "tx": 444557
+          }
+        ],
+        "months": [
+          {
+            "id": 0,
+            "date": { "year": 2026, "month": 4, "day": 1 },
+            "rx": 8588081,
+            "tx": 2216735
+          },
+          {
+            "id": 1,
+            "date": { "year": 2026, "month": 3, "day": 1 },
+            "rx": 4524492,
+            "tx": 444557
+          }
+        ],
+        "tops": [
+          {
+            "id": 0,
+            "date": { "year": 2026, "month": 4, "day": 1 },
+            "rx": 8588081,
+            "tx": 2216735
+          },
+          {
+            "id": 1,
+            "date": { "year": 2026, "month": 3, "day": 31 },
+            "rx": 4524492,
+            "tx": 444557
+          }
+        ]
+      }
+    }
+  ]
+}

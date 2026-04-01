@@ -41,6 +41,14 @@ function get_interface_data(interface) {
         if (t.day == null && t.days != null) t.day = t.days;
         if (t.month == null && t.months != null) t.month = t.months;
         if (t.top == null && t.tops != null) t.top = t.tops;
+
+        // vnstat 1.x: arrays are reverse-chronological (id=0 = newest)
+        // vnstat 2.x: arrays are chronological (newest last)
+        // Normalize to chronological order so days[last] = today
+        if (data.jsonversion == "1") {
+            if (t.day) t.day = reverse(t.day);
+            if (t.month) t.month = reverse(t.month);
+        }
     }
     return { iface, scale };
 }
