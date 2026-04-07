@@ -63,6 +63,7 @@ for (let alert_mod in alert_modules) {
     if      (alert_mod.name == "new_device")      enabled = config.alerts.new_device;
     else if (alert_mod.name == "wan_status")       enabled = config.alerts.wan_status;
     else if (alert_mod.name == "temp_threshold")   enabled = config.alerts.temp_threshold;
+    else if (alert_mod.name == "device_offline")   enabled = config.alerts.device_offline;
 
     if (!enabled) continue;
 

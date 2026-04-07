@@ -50,6 +50,8 @@ function load_uci_config() {
     let alerts_wan       = uci_get("alerts.wan_status");
     let alerts_temp      = uci_get("alerts.temp_threshold");
     let alerts_temp_lim  = uci_get("alerts.temp_limit");
+    let alerts_offline     = uci_get("alerts.device_offline");
+    let alerts_offline_thr = uci_get("alerts.offline_threshold");
     let traffic_iface    = uci_get("traffic.interface");
     let traffic_warn     = uci_get("traffic.warn_daily_gb");
 
@@ -67,6 +69,8 @@ function load_uci_config() {
             wan_status:     alerts_wan       != "0",
             temp_threshold: alerts_temp      != "0",
             temp_limit:     +(alerts_temp_lim || "85"),
+            device_offline:    alerts_offline     != "0",
+            offline_threshold: +(alerts_offline_thr || "120"),
         },
         traffic: {
             interface:    traffic_iface  || "eth0",
@@ -125,6 +129,8 @@ function load_env_config(env_path) {
             wan_status:     env.ALERTS_WAN_STATUS      != "0",
             temp_threshold: env.ALERTS_TEMP_THRESHOLD  != "0",
             temp_limit:     +(env.ALERTS_TEMP_LIMIT    || "85"),
+            device_offline:    env.ALERTS_DEVICE_OFFLINE    != "0",
+            offline_threshold: +(env.ALERTS_OFFLINE_THRESHOLD || "120"),
         },
         traffic: {
             interface:     env.TRAFFIC_INTERFACE     || "eth0",

@@ -44,14 +44,40 @@ apk add curl ca-bundle vnstat
 opkg update && opkg install curl ca-bundle vnstat
 ```
 
-### 2. Deploy
+### 2. Configure vnstat (recommended)
+
+By default vnstat writes its database to flash every 30 minutes, which means
+`/traffic` data can be stale. Move the database to RAM and back up to flash
+on shutdown to get fresh stats without wearing out NAND:
+
+```bash
+ssh root@192.168.1.1
+
+# Database in RAM (tmpfs), save every minute (free in RAM)
+sed -i 's|^DatabaseDir.*|DatabaseDir "/tmp/vnstat"|' /etc/vnstat.conf
+sed -i 's|^SaveInterval.*|SaveInterval 1|' /etc/vnstat.conf
+
+# Persistent backup dir for restoring after reboot
+uci set vnstat.@vnstat[0].backup_dir='/var/lib/vnstat'
+uci commit vnstat
+
+# Hourly backup from RAM to flash (max 24 writes/day)
+(crontab -l 2>/dev/null | grep -v 'vnstat.*backup'
+ echo "0 * * * * cp -f /tmp/vnstat/wan /tmp/vnstat/br-lan /var/lib/vnstat/ 2>/dev/null"
+) | crontab -
+```
+
+Also add `stop_service` to `/etc/init.d/vnstat` so the database is saved on
+shutdown/restart — see `files/vnstat-init-patch.sh`.
+
+### 3. Deploy
 
 ```bash
 # From your dev machine
 make deploy ROUTER_HOST=192.168.1.1
 ```
 
-### 3. Configure
+### 4. Configure
 
 ```bash
 ssh root@192.168.1.1
@@ -63,7 +89,7 @@ uci commit owrt-tgbot
 
 Get your chat ID by sending `/start` to [@userinfobot](https://t.me/userinfobot).
 
-### 4. Start
+### 5. Start
 
 ```bash
 ssh root@192.168.1.1
@@ -72,7 +98,7 @@ service owrt-tgbot enable   # autostart on boot
 service owrt-tgbot start
 ```
 
-### 5. Set up alerts (optional)
+### 6. Set up alerts (optional)
 
 Add to the router's crontab:
 
