@@ -4,6 +4,7 @@ import { writefile } from 'fs';
 import * as ubus from '../lib/ubus_wrapper.uc';
 import * as util from '../lib/util.uc';
 import * as devices_lib from '../lib/devices.uc';
+import * as mac_vendor from '../lib/mac_vendor.uc';
 
 const LEARNING_PERIOD = 120; // seconds after boot
 
@@ -50,13 +51,18 @@ return {
 
         if (length(new_devices) == 0) return null;
 
+        // Init vendor lookup for name resolution
+        mac_vendor.init(ctx.state_dir, ctx.config);
+
         // Format alert
         let lines = [];
         if (length(new_devices) > 3) {
             push(lines, sprintf("%s *%d new devices detected*", ic["new"], length(new_devices)));
             for (let i = 0; i < length(new_devices); i++) {
                 let dev = new_devices[i];
-                let name = dev.hostname || dev.ip || "unknown";
+                let resolved = mac_vendor.resolve_name(dev);
+                let name = resolved.name;
+                if (name == "unknown" && dev.ip != null) name = dev.ip;
                 let prefix = (i == length(new_devices) - 1) ? ic.corner : ic.tee;
                 push(lines, sprintf("%s %s (%s)",
                     prefix,
@@ -65,10 +71,15 @@ return {
             }
         } else {
             for (let dev in new_devices) {
+                let resolved = mac_vendor.resolve_name(dev);
+                let name_display = util.escape_markdown(resolved.name);
+                if (resolved.style == "vendor") {
+                    name_display = "_" + name_display + "_";
+                }
                 push(lines, sprintf(
                     "%s *New device detected*\n%s Name: %s\n%s IP: %s\n%s MAC: %s",
                     ic["new"], ic.tee,
-                    util.escape_markdown(dev.hostname || "unknown"),
+                    name_display,
                     ic.tee,
                     util.escape_markdown(dev.ip || "?"),
                     ic.corner,

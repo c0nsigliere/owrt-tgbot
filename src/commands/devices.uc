@@ -2,6 +2,7 @@
 
 import * as util from '../lib/util.uc';
 import * as devices_lib from '../lib/devices.uc';
+import * as mac_vendor from '../lib/mac_vendor.uc';
 
 const PAGE_SIZE = 10;
 
@@ -10,14 +11,22 @@ function format_device_list(devices, start, end, ic) {
     for (let i = start; i < end; i++) {
         let dev = devices[i];
         let status_icon = dev.online ? ic.green : ic.white;
-        let name = dev.hostname || "unknown";
-        if (dev.hostname == null) status_icon = ic.yellow;
+        let resolved = mac_vendor.resolve_name(dev);
+        let display_name;
+        if (resolved.style == "vendor") {
+            display_name = "_" + util.escape_markdown(resolved.name) + "_";
+        } else {
+            display_name = util.escape_markdown(resolved.name);
+        }
+        if (resolved.style == "unknown" || resolved.style == "random") {
+            status_icon = ic.yellow;
+        }
 
         let is_last = (i == end - 1);
         let prefix = is_last ? ic.corner : ic.tee;
         let cont = is_last ? "  " : ic.pipe;
 
-        push(lines, sprintf("%s %s %s", prefix, status_icon, util.escape_markdown(name)));
+        push(lines, sprintf("%s %s %s", prefix, status_icon, display_name));
         push(lines, sprintf("%s     %s %s", cont,
             util.escape_markdown(dev.ip || "?"),
             util.escape_markdown(dev.mac || "?")));
@@ -33,7 +42,8 @@ function format_device_list(devices, start, end, ic) {
     return lines;
 }
 
-function build_page(page) {
+function build_page(page, ctx) {
+    mac_vendor.init(ctx.state_dir, ctx.config);
     let devices = devices_lib.get_all();
     let ic = util.icons;
 
@@ -57,6 +67,9 @@ function build_page(page) {
     push(lines, ic.pipe);
     let dl = format_device_list(devices, start, end, ic);
     for (let l in dl) push(lines, l);
+
+    // Persist vendor cache after lookups
+    mac_vendor.save_to_disk();
 
     let text = join("\n", lines);
 
@@ -95,13 +108,13 @@ return {
             let p = +a;
             if (p > 0) page = int(p);
         }
-        return build_page(page);
+        return build_page(page, ctx);
     },
 
     on_callback: function(chat_id, message_id, cb_args, ctx) {
         if (cb_args == "noop") return null;
         let page = +cb_args;
         if (!(page > 0)) page = 1;
-        return build_page(int(page));
+        return build_page(int(page), ctx);
     },
 };

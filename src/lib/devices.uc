@@ -129,9 +129,10 @@ function get_all() {
         seen_macs[mac] = true;
     }
 
-    // Add ARP entries not in DHCP leases
+    // Add ARP entries not in DHCP leases (LAN only — skip WAN gateway etc.)
     for (let entry in arp_entries) {
         if (seen_macs[entry.mac]) continue;
+        if (entry.device != null && !match(entry.device, /^br-/)) continue;
         let wifi = wifi_clients[entry.mac];
         push(devices, {
             mac:       entry.mac,

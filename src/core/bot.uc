@@ -119,7 +119,7 @@ function create(config, notify) {
         let msg = cq.message;
         let chat_id = (msg != null && msg.chat != null) ? msg.chat.id : from.id;
         let message_id = (msg != null) ? msg.message_id : null;
-        let ctx = { config, notify, commands: registry };
+        let ctx = { config, notify, commands: registry, state_dir: "/tmp/owrt-tgbot/state/" };
 
         let response = handler(chat_id, message_id, cb_args, ctx);
         if (response != null && message_id != null) {
@@ -170,7 +170,7 @@ function create(config, notify) {
             return;
         }
 
-        let ctx = { config, notify, commands: registry };
+        let ctx = { config, notify, commands: registry, state_dir: "/tmp/owrt-tgbot/state/" };
 
         if (cmd_module.async) {
             if (count_tasks(pending_tasks) >= MAX_CONCURRENT_TASKS) {

@@ -50,6 +50,16 @@ return {
             } else if (filename == "temp_alert_state" && content != null) {
                 let m = match(util.trim(content), /^(\S+)/);
                 detail = m ? m[1] : "";
+            } else if (filename == "device_aliases.json" && content != null) {
+                let obj = json(content);
+                let count = 0;
+                if (obj != null) for (let _ in obj) count++;
+                detail = count + " aliases";
+            } else if (filename == "vendor_cache.json" && content != null) {
+                let obj = json(content);
+                let count = 0;
+                if (obj != null) for (let _ in obj) count++;
+                detail = count + " vendors cached";
             } else {
                 detail = "saved";
             }
