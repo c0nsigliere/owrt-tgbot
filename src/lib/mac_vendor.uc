@@ -12,28 +12,31 @@ let _proxy_url = "";
 let _initialized = false;
 
 function init(state_dir, config) {
-    if (_initialized) return;
     _state_dir = state_dir || "/tmp/owrt-tgbot/state/";
     if (config) {
         _proxy_enabled = config.proxy_enabled || false;
         _proxy_url = config.proxy_url || "";
     }
 
-    // Load vendor cache from disk
-    let vc = readfile(_state_dir + "vendor_cache.json");
-    if (vc != null) {
-        let parsed = json(vc);
-        if (parsed != null) _vendor_cache = parsed;
+    // Load vendor cache from disk (only on first init — stays in memory after)
+    if (!_initialized) {
+        let vc = readfile(_state_dir + "vendor_cache.json");
+        if (vc != null) {
+            let parsed = json(vc);
+            if (parsed != null) _vendor_cache = parsed;
+        }
+        _initialized = true;
     }
 
-    // Load aliases from disk
+    // Always reload aliases — they may have been modified by another
+    // module instance (rename.uc runs in a separate loadfile() scope)
     let al = readfile(_state_dir + "device_aliases.json");
     if (al != null) {
         let parsed = json(al);
         if (parsed != null) _aliases = parsed;
+    } else {
+        _aliases = {};
     }
-
-    _initialized = true;
 }
 
 // Check if MAC is locally administered (randomized)
@@ -147,10 +150,19 @@ function get_aliases() {
     return _aliases;
 }
 
-function save_to_disk() {
+function save_vendor_cache() {
     if (_state_dir == null) return;
     writefile(_state_dir + "vendor_cache.json", sprintf("%J", _vendor_cache));
+}
+
+function save_aliases() {
+    if (_state_dir == null) return;
     writefile(_state_dir + "device_aliases.json", sprintf("%J", _aliases));
+}
+
+function save_to_disk() {
+    save_vendor_cache();
+    save_aliases();
 }
 
 // Resolve a display name for a device
@@ -197,6 +209,8 @@ export {
     set_alias,
     remove_alias,
     get_aliases,
+    save_vendor_cache,
+    save_aliases,
     save_to_disk,
     resolve_name,
     _reset

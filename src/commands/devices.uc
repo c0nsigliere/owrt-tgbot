@@ -68,9 +68,6 @@ function build_page(page, ctx) {
     let dl = format_device_list(devices, start, end, ic);
     for (let l in dl) push(lines, l);
 
-    // Persist vendor cache after lookups
-    mac_vendor.save_to_disk();
-
     let text = join("\n", lines);
 
     // Build inline keyboard

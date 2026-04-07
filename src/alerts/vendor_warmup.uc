@@ -30,7 +30,7 @@ return {
             if (result == null) break;  // throttled — done for this cycle
         }
 
-        mac_vendor.save_to_disk();
+        mac_vendor.save_vendor_cache();
         return null;
     },
 };
