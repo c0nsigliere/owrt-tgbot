@@ -60,9 +60,8 @@ return {
             push(lines, sprintf("%s *%d new devices detected*", ic["new"], length(new_devices)));
             for (let i = 0; i < length(new_devices); i++) {
                 let dev = new_devices[i];
-                let resolved = mac_vendor.resolve_name(dev);
-                let name = resolved.name;
-                if (name == "unknown" && dev.ip != null) name = dev.ip;
+                let name = mac_vendor.resolve_display_name(dev);
+                if (name == "unknown" && dev.ip != null) name = util.escape_markdown(dev.ip);
                 let prefix = (i == length(new_devices) - 1) ? ic.corner : ic.tee;
                 push(lines, sprintf("%s %s (%s)",
                     prefix,
@@ -71,11 +70,7 @@ return {
             }
         } else {
             for (let dev in new_devices) {
-                let resolved = mac_vendor.resolve_name(dev);
-                let name_display = util.escape_markdown(resolved.name);
-                if (resolved.style == "vendor") {
-                    name_display = "_" + name_display + "_";
-                }
+                let name_display = mac_vendor.resolve_display_name(dev);
                 push(lines, sprintf(
                     "%s *New device detected*\n%s Name: %s\n%s IP: %s\n%s MAC: %s",
                     ic["new"], ic.tee,

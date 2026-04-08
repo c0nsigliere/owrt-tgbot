@@ -3,6 +3,7 @@
 import { writefile } from 'fs';
 import * as util from '../lib/util.uc';
 import * as devices_lib from '../lib/devices.uc';
+import * as mac_vendor from '../lib/mac_vendor.uc';
 
 const PRUNE_AFTER = 604800; // 7 days — remove stale entries
 
@@ -12,6 +13,7 @@ return {
 
     check: function(ctx) {
         let ic = util.icons;
+        mac_vendor.init(ctx.state_dir, ctx.config);
         let threshold = ctx.config.alerts.offline_threshold || 120;
         let state_file = ctx.state_dir + "device_offline.json";
         let now = time();
@@ -114,19 +116,18 @@ return {
                     ic.red, length(offline_msgs)));
                 for (let i = 0; i < length(offline_msgs); i++) {
                     let d = offline_msgs[i];
-                    let name = d.hostname || d.ip || "unknown";
+                    let name = mac_vendor.resolve_display_name(d);
+                    if (name == "unknown" && d.ip) name = util.escape_markdown(d.ip);
                     let prefix = (i == length(offline_msgs) - 1) ? ic.corner : ic.tee;
                     push(lines, sprintf("%s %s (%s)",
-                        prefix,
-                        util.escape_markdown(name),
-                        util.escape_markdown(d.mac)));
+                        prefix, name, util.escape_markdown(d.mac)));
                 }
             } else {
                 for (let d in offline_msgs) {
                     push(lines, sprintf(
                         "%s *Device offline*\n%s Name: %s\n%s IP: %s\n%s MAC: %s\n%s Last seen: %s ago",
                         ic.red, ic.tee,
-                        util.escape_markdown(d.hostname || "unknown"),
+                        mac_vendor.resolve_display_name(d),
                         ic.tee,
                         util.escape_markdown(d.ip || "?"),
                         ic.tee,
@@ -143,21 +144,24 @@ return {
                     ic.green, length(online_msgs)));
                 for (let i = 0; i < length(online_msgs); i++) {
                     let d = online_msgs[i];
-                    let name = d.hostname || d.ip || "unknown";
+                    let name = mac_vendor.resolve_display_name(d);
+                    if (name == "unknown" && d.ip) name = util.escape_markdown(d.ip);
                     let prefix = (i == length(online_msgs) - 1) ? ic.corner : ic.tee;
-                    push(lines, sprintf("%s %s (%s)",
-                        prefix,
-                        util.escape_markdown(name),
+                    push(lines, sprintf("%s %s (%s) \u2014 %s",
+                        prefix, name,
+                        util.escape_markdown(d.mac),
                         util.format_uptime(d.duration)));
                 }
             } else {
                 for (let d in online_msgs) {
                     push(lines, sprintf(
-                        "%s *Device back online*\n%s Name: %s\n%s IP: %s\n%s Offline for: %s",
+                        "%s *Device back online*\n%s Name: %s\n%s IP: %s\n%s MAC: %s\n%s Offline for: %s",
                         ic.green, ic.tee,
-                        util.escape_markdown(d.hostname || "unknown"),
+                        mac_vendor.resolve_display_name(d),
                         ic.tee,
                         util.escape_markdown(d.ip || "?"),
+                        ic.tee,
+                        util.escape_markdown(d.mac),
                         ic.corner,
                         util.format_uptime(d.duration)));
                 }

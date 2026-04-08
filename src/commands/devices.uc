@@ -12,12 +12,7 @@ function format_device_list(devices, start, end, ic) {
         let dev = devices[i];
         let status_icon = dev.online ? ic.green : ic.white;
         let resolved = mac_vendor.resolve_name(dev);
-        let display_name;
-        if (resolved.style == "vendor") {
-            display_name = "_" + util.escape_markdown(resolved.name) + "_";
-        } else {
-            display_name = util.escape_markdown(resolved.name);
-        }
+        let display_name = mac_vendor.resolve_display_name(dev);
         if (resolved.style == "unknown" || resolved.style == "random") {
             status_icon = ic.yellow;
         }

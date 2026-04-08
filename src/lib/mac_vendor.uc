@@ -189,6 +189,15 @@ function resolve_name(dev) {
     return { name: "unknown", style: "unknown" };
 }
 
+// Returns Markdown-escaped display name, vendor names in _italics_
+function resolve_display_name(dev) {
+    let resolved = resolve_name(dev);
+    if (resolved.style == "vendor") {
+        return "_" + util.escape_markdown(resolved.name) + "_";
+    }
+    return util.escape_markdown(resolved.name);
+}
+
 // Reset state (for testing)
 function _reset() {
     _vendor_cache = {};
@@ -213,5 +222,6 @@ export {
     save_aliases,
     save_to_disk,
     resolve_name,
+    resolve_display_name,
     _reset
 };
