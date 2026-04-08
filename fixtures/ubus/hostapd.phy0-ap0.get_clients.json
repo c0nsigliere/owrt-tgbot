@@ -1,0 +1,19 @@
+{
+	"freq": 2412,
+	"clients": {
+		"aa:bb:cc:dd:ee:01": {
+			"auth": true,
+			"assoc": true,
+			"authorized": true,
+			"signal": -45,
+			"aid": 1
+		},
+		"aa:bb:cc:dd:ee:06": {
+			"auth": true,
+			"assoc": true,
+			"authorized": true,
+			"signal": -62,
+			"aid": 2
+		}
+	}
+}

@@ -1,0 +1,12 @@
+Station aa:bb:cc:dd:ee:01 (on phy0-ap0)
+	inactive time:	120 ms
+	rx bytes:	491185565
+	tx bytes:	641791500
+	signal:  	-45 dBm
+	connected time:	3600 seconds
+Station aa:bb:cc:dd:ee:06 (on phy0-ap0)
+	inactive time:	80 ms
+	rx bytes:	12345678
+	tx bytes:	87654321
+	signal:  	-62 dBm
+	connected time:	7200 seconds

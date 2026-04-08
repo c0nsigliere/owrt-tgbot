@@ -1,12 +1,13 @@
 'use strict';
 
+import { writefile } from 'fs';
 import * as util from '../lib/util.uc';
 import * as devices_lib from '../lib/devices.uc';
 import * as mac_vendor from '../lib/mac_vendor.uc';
 
 const PAGE_SIZE = 10;
 
-function format_device_list(devices, start, end, ic) {
+function format_device_list(devices, start, end, ic, now, conn_state, offline_state) {
     let lines = [];
     for (let i = start; i < end; i++) {
         let dev = devices[i];
@@ -22,6 +23,27 @@ function format_device_list(devices, start, end, ic) {
         let cont = is_last ? "  " : ic.pipe;
 
         push(lines, sprintf("%s %s %s", prefix, status_icon, display_name));
+
+        // Connection duration or last-seen line
+        if (dev.online) {
+            let entry = conn_state[dev.mac];
+            if (entry != null) {
+                let duration = now - entry.since;
+                if (duration < 60) duration = 60;
+                push(lines, sprintf("%s     Online %s", cont,
+                    util.escape_markdown(util.format_uptime(duration))));
+            }
+        } else {
+            let entry = offline_state[dev.mac];
+            if (entry != null && entry.seen != null) {
+                let ago = now - entry.seen;
+                if (ago > 0) {
+                    push(lines, sprintf("%s     Seen %s ago", cont,
+                        util.escape_markdown(util.format_uptime(ago))));
+                }
+            }
+        }
+
         push(lines, sprintf("%s     %s %s", cont,
             util.escape_markdown(dev.ip || "?"),
             util.escape_markdown(dev.mac || "?")));
@@ -41,6 +63,35 @@ function build_page(page, ctx) {
     mac_vendor.init(ctx.state_dir, ctx.config);
     let devices = devices_lib.get_all();
     let ic = util.icons;
+    let now = time();
+
+    // Load/update connection state for online devices
+    let conn_state_file = ctx.state_dir + "device_connections.json";
+    let conn_raw = util.read_file(conn_state_file);
+    let conn_state = (conn_raw != null) ? json(conn_raw) : null;
+    if (conn_state == null || type(conn_state) != "object") conn_state = {};
+
+    let new_conn_state = {};
+    for (let dev in devices) {
+        if (!dev.online) continue;
+        let mac = dev.mac;
+        if (dev.connected_time != null) {
+            // Wi-Fi: authoritative — always use kernel value
+            new_conn_state[mac] = { since: now - dev.connected_time };
+        } else if (conn_state[mac] != null) {
+            // Wired, already tracked — keep existing timestamp
+            new_conn_state[mac] = conn_state[mac];
+        } else {
+            // Wired, first seen — start from now
+            new_conn_state[mac] = { since: now };
+        }
+    }
+    writefile(conn_state_file, sprintf("%J", new_conn_state));
+
+    // Load device_offline state for last-seen info
+    let offline_raw = util.read_file(ctx.state_dir + "device_offline.json");
+    let offline_state = (offline_raw != null) ? json(offline_raw) : null;
+    if (offline_state == null || type(offline_state) != "object") offline_state = {};
 
     let online_count = 0;
     for (let dev in devices) {
@@ -60,7 +111,7 @@ function build_page(page, ctx) {
     push(lines, sprintf("%s *Connected Devices (%d online, %d total) — %d/%d*",
         ic.phone, online_count, total, page, pages));
     push(lines, ic.pipe);
-    let dl = format_device_list(devices, start, end, ic);
+    let dl = format_device_list(devices, start, end, ic, now, new_conn_state, offline_state);
     for (let l in dl) push(lines, l);
 
     let text = join("\n", lines);

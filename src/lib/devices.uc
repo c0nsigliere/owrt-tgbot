@@ -49,23 +49,79 @@ function parse_arp(content) {
     return entries;
 }
 
-function get_wifi_clients() {
-    if (!ubus.is_openwrt) return {};
-    let clients = {};
+function parse_station_dump(content) {
+    if (content == null) return {};
+    let times = {};
+    let current_mac = null;
+    for (let line in split(content, "\n")) {
+        let sm = match(line, /^Station\s+(\S+)/);
+        if (sm) { current_mac = uc(sm[1]); continue; }
+        if (current_mac != null) {
+            let tm = match(line, /connected time:\s+(\d+)/);
+            if (tm) { times[current_mac] = +tm[1]; current_mac = null; }
+        }
+    }
+    return times;
+}
+
+function get_station_connected_times() {
+    let times = {};
+
+    if (!ubus.is_openwrt) {
+        let content = util.read_file(ubus.fixtures_dir() + "/iw_station_dump.txt");
+        return parse_station_dump(content);
+    }
+
     let h = popen("ubus list 'hostapd.*' 2>/dev/null", 'r');
-    if (h == null) return clients;
+    if (h == null) return times;
     let listing = h.read('all');
     h.close();
-    if (listing == null) return clients;
+    if (listing == null) return times;
 
     for (let iface_name in split(listing, "\n")) {
         iface_name = util.trim(iface_name);
         if (iface_name == "") continue;
+        let dev_name = replace(iface_name, "hostapd.", "");
+        let p = popen("iw dev " + dev_name + " station dump 2>/dev/null", 'r');
+        if (p == null) continue;
+        let output = p.read('all');
+        p.close();
+        let iface_times = parse_station_dump(output);
+        for (let mac in iface_times) {
+            times[mac] = iface_times[mac];
+        }
+    }
+    return times;
+}
+
+function get_wifi_clients() {
+    let clients = {};
+    let iface_list = [];
+
+    if (ubus.is_openwrt) {
+        let h = popen("ubus list 'hostapd.*' 2>/dev/null", 'r');
+        if (h == null) return clients;
+        let listing = h.read('all');
+        h.close();
+        if (listing == null) return clients;
+        for (let name in split(listing, "\n")) {
+            name = util.trim(name);
+            if (name != "") push(iface_list, name);
+        }
+    } else {
+        // Dev mode: try fixture for phy0-ap0
+        iface_list = ["hostapd.phy0-ap0"];
+    }
+
+    for (let iface_name in iface_list) {
         let data = ubus.call(iface_name, "get_clients");
         if (data == null || data.clients == null) continue;
         let band = null;
-        if (match(iface_name, /wlan0/)) band = "2.4GHz";
-        else if (match(iface_name, /wlan1/)) band = "5GHz";
+        if (data.freq != null) {
+            if (data.freq < 3000) band = "2.4GHz";
+            else if (data.freq < 6000) band = "5GHz";
+            else band = "6GHz";
+        }
         for (let mac_addr in data.clients) {
             let info = data.clients[mac_addr];
             mac_addr = uc(mac_addr);
@@ -77,6 +133,13 @@ function get_wifi_clients() {
             };
         }
     }
+
+    // Merge connected_time from iw station dump
+    let conn_times = get_station_connected_times();
+    for (let mac in clients) {
+        clients[mac].connected_time = (conn_times[mac] != null) ? conn_times[mac] : null;
+    }
+
     return clients;
 }
 
@@ -102,7 +165,10 @@ function get_all() {
     // Build ARP lookup by MAC
     let arp_by_mac = {};
     for (let entry in arp_entries) {
-        arp_by_mac[entry.mac] = entry;
+        let existing = arp_by_mac[entry.mac];
+        if (existing == null || (!existing.reachable && entry.reachable)) {
+            arp_by_mac[entry.mac] = entry;
+        }
     }
 
     // Get WiFi clients
@@ -125,6 +191,7 @@ function get_all() {
             interface: (wifi != null) ? wifi.interface : ((arp != null) ? arp.device : "unknown"),
             signal:    (wifi != null) ? wifi.signal : null,
             band:      (wifi != null) ? wifi.band   : null,
+            connected_time: (wifi != null) ? wifi.connected_time : null,
         });
         seen_macs[mac] = true;
     }
@@ -142,6 +209,7 @@ function get_all() {
             interface: (wifi != null) ? wifi.interface : entry.device,
             signal:    (wifi != null) ? wifi.signal : null,
             band:      (wifi != null) ? wifi.band   : null,
+            connected_time: (wifi != null) ? wifi.connected_time : null,
         });
         seen_macs[entry.mac] = true;
     }
@@ -158,4 +226,4 @@ function get_all() {
     return devices;
 }
 
-export { parse_dhcp_leases, parse_arp, get_wifi_clients, get_all };
+export { parse_dhcp_leases, parse_arp, parse_station_dump, get_wifi_clients, get_all };
