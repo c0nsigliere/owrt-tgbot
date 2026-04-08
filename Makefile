@@ -13,6 +13,8 @@ deploy:
 	$(SCP) -r src/* root@$(ROUTER_HOST):$(INSTALL_DIR)/
 	$(SCP) files/owrt-tgbot.init root@$(ROUTER_HOST):/etc/init.d/owrt-tgbot
 	ssh root@$(ROUTER_HOST) "chmod +x /etc/init.d/owrt-tgbot"
+	@ssh root@$(ROUTER_HOST) "grep -q 'midnight.uc' /etc/crontabs/root 2>/dev/null || \
+		(echo '0 0 * * * /usr/bin/ucode -S /usr/lib/owrt-tgbot/cron/midnight.uc' >> /etc/crontabs/root && /etc/init.d/cron restart)"
 	@# Only copy config if it doesn't already exist (don't overwrite token)
 	@ssh root@$(ROUTER_HOST) "[ -f /etc/config/owrt-tgbot ]" 2>/dev/null || \
 		$(SCP) files/owrt-tgbot.config root@$(ROUTER_HOST):/etc/config/owrt-tgbot

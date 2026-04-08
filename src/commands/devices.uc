@@ -4,10 +4,11 @@ import { writefile } from 'fs';
 import * as util from '../lib/util.uc';
 import * as devices_lib from '../lib/devices.uc';
 import * as mac_vendor from '../lib/mac_vendor.uc';
+import * as nlbwmon from '../lib/nlbwmon.uc';
 
 const PAGE_SIZE = 10;
 
-function format_device_list(devices, start, end, ic, now, conn_state, offline_state) {
+function format_device_list(devices, start, end, ic, now, conn_state, offline_state, traffic) {
     let lines = [];
     for (let i = start; i < end; i++) {
         let dev = devices[i];
@@ -54,6 +55,13 @@ function format_device_list(devices, start, end, ic, now, conn_state, offline_st
                 dev.signal));
         } else if (dev.band != null) {
             push(lines, sprintf("%s     %s", cont, util.escape_markdown(dev.band)));
+        }
+
+        let t = traffic[dev.mac];
+        if (t != null && (t.rx > 0 || t.tx > 0)) {
+            push(lines, sprintf("%s     \u2193 %s  \u2191 %s", cont,
+                util.escape_markdown(util.format_bytes(t.rx)),
+                util.escape_markdown(util.format_bytes(t.tx))));
         }
     }
     return lines;
@@ -111,7 +119,8 @@ function build_page(page, ctx) {
     push(lines, sprintf("%s *Connected Devices (%d online, %d total) — %d/%d*",
         ic.phone, online_count, total, page, pages));
     push(lines, ic.pipe);
-    let dl = format_device_list(devices, start, end, ic, now, new_conn_state, offline_state);
+    let traffic = nlbwmon.get_today_traffic(ctx.state_dir);
+    let dl = format_device_list(devices, start, end, ic, now, new_conn_state, offline_state, traffic);
     for (let l in dl) push(lines, l);
 
     let text = join("\n", lines);
